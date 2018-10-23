@@ -1,6 +1,7 @@
 import json
 import struct
 import pickle
+from abc import abstractmethod
 
 
 class Coder():
@@ -35,7 +36,7 @@ def __create_int_coder(name, fmt):
     def deserialize(self, buffer):
       if buffer is None:
         return None
-      return struct.unpack(fmt, buffer)
+      return struct.unpack(fmt, buffer)[0]
 
   IntCoder.__name__ = name
   return IntCoder
