@@ -1,6 +1,7 @@
 import json
 import struct
 import pickle
+import zlib
 from abc import abstractmethod
 
 
@@ -14,6 +15,9 @@ class Coder():
   def deserialize(self, buffer):
     pass
 
+  def compressed(self, level=1):
+    return ZlibCoder(self, level)
+
 
 class IdentityCoder(Coder):
 
@@ -24,6 +28,20 @@ class IdentityCoder(Coder):
     if buffer is None:
       return None
     return bytes(buffer)
+
+
+class StringCoder(Coder):
+
+  def __init__(self, encoding="utf8"):
+    self.encoding = encoding
+
+  def serialize(self, obj):
+    return obj.encode(self.encoding)
+
+  def deserialize(self, buffer):
+    if buffer is None:
+      return None
+    return buffer.decode(self.encoding)
 
 
 def __create_int_coder(name, fmt):
@@ -58,15 +76,30 @@ class PickleCoder(Coder):
     return pickle.loads(buffer)
 
 
-class JSONCoder(Coder):
-
-  def __init__(self, encoding="utf8"):
-    self.encoding = encoding
+class JSONCoder(StringCoder):
 
   def serialize(self, obj):
-    return json.dumps(obj, ensure_ascii=False).encode(self.encoding)
+    json_str = json.dumps(obj, ensure_ascii=False)
+    return super(StringCoder, self).serialize(json_str)
 
   def deserialize(self, buffer):
     if buffer is None:
       return None
-    return json.loads(buffer)
+    return json.loads(super(StringCoder, self).deserialize(buffer))
+
+
+class ZlibCoder(Coder):
+
+  def __init__(self, subcoder, level=1):
+    self.subcoder = subcoder
+    self.level = level
+
+  def serialize(self, obj):
+    buf = self.subcoder.serialize(obj)
+    return zlib.compress(buf, self.level)
+
+  def deserialize(self, buffer):
+    if buffer is None:
+      return None
+    decomp_buffer = zlib.decompress(buffer)
+    return self.subcoder.deserialize(decomp_buffer)
