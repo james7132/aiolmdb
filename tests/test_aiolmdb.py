@@ -202,7 +202,7 @@ class OpenTest(testlib.AiolmdbTestCase):
                           lambda: self.create_env(max_dbs=-1))
         for val in 0, 10, 20:
             _, env = self.create_env(max_dbs=val)
-            [env.open_db(b'db%d' % i) for i in range(val)]
+            [env.open_db(('db%d' % i).encode()) for i in range(val)]
             self.assertRaises(lmdb.DbsFullError,
                               lambda: env.open_db(b'toomany'))
 
