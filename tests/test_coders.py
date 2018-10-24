@@ -87,6 +87,26 @@ class CoderTests(unittest.TestCase):
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, UInt64Coder().deserialize(enc))
 
+    def test_string_serialize(self):
+        test_cases = [
+            ("{}", b'{}'),
+            ("[]", b'[]'),
+            ('{"key": "value"}', b'{"key": "value"}')
+        ]
+        for val, enc in test_cases:
+            with self.subTest(val=val, enc=enc):
+                self.assertEqual(enc, StringCoder().serialize(val))
+
+    def test_string_deserialize(self):
+        test_cases = [
+            ("{}", b'{}'),
+            ("[]", b'[]'),
+            ('{"key": "value"}', b'{"key": "value"}')
+        ]
+        for val, enc in test_cases:
+            with self.subTest(val=val, enc=enc):
+                self.assertEqual(val, StringCoder().deserialize(enc))
+
     def test_json_serialize(self):
         test_cases = [
             ({}, b'{}'),
@@ -107,6 +127,30 @@ class CoderTests(unittest.TestCase):
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, JSONCoder().deserialize(enc))
 
+    def test_compressed_deserialize(self):
+        test_cases = [
+            ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
+            ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
+            ({"key":"value"},
+                b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
+        ]
+        coder = JSONCoder().compressed(9)
+        for val, enc in test_cases:
+            with self.subTest(val=val, enc=enc):
+                self.assertEqual(val, coder.deserialize(enc))
+
+    def test_compressed_serialize(self):
+        test_cases = [
+            ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
+            ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
+            ({"key":"value"},
+                b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
+        ]
+        coder = JSONCoder().compressed(9)
+        for val, enc in test_cases:
+            with self.subTest(val=val, enc=enc):
+                self.assertEqual(enc, coder.serialize(val))
+
     def test_pickle_serialize(self):
         test_cases = [
             ({}, b'\x80\x03}q\x00.'),
@@ -118,7 +162,7 @@ class CoderTests(unittest.TestCase):
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(enc, PickleCoder().serialize(val))
 
-    def test_json_deserialize(self):
+    def test_pickle_deserialize(self):
         test_cases = [
             ({}, b'\x80\x03}q\x00.'),
             ([], b'\x80\x03]q\x00.'),
