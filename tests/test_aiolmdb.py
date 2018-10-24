@@ -381,7 +381,7 @@ class OtherMethodsTest(testlib.AiolmdbTestCase):
         assert os.path.exists(dest_dir + '/data.mdb')
 
         cenv = aiolmdb.open(dest_dir)
-        self.assertEquals((yield from cenv.get_default_db().get(b'a')), b'b')
+        self.assertEqual((yield from cenv.get_default_db().get(b'a')), b'b')
 
         env.close()
 
@@ -400,7 +400,7 @@ class OtherMethodsTest(testlib.AiolmdbTestCase):
         assert os.path.exists(dest_dir + '/data.mdb')
 
         cenv = aiolmdb.open(dest_dir)
-        self.assertEquals((yield from cenv.get_default_db().get(b'a')), b'b')
+        self.assertEqual((yield from cenv.get_default_db().get(b'a')), b'b')
 
         env.close()
 
@@ -470,17 +470,17 @@ class OpenDbTest(testlib.AiolmdbTestCase):
 
     def test_unicode(self):
         _, env = self.create_env()
-        assert env.open_db(b'myindex') is not None
+        self.assertIsNotNone(env.open_db(b'myindex'))
         self.assertRaises(TypeError,
                           lambda: env.open_db(u'myindex'))
 
     def test_sub_notxn(self):
         _, env = self.create_env()
-        assert env.info()['last_txnid'] == 0
+        self.assertEqual(env.info()['last_txnid'], 0)
         env.open_db(b'subdb1')
-        assert env.info()['last_txnid'] == 1
+        self.assertEqual(env.info()['last_txnid'], 1)
         env.open_db(b'subdb2')
-        assert env.info()['last_txnid'] == 2
+        self.assertEqual(env.info()['last_txnid'], 2)
 
         env.close()
         self.assertRaises(Exception,
@@ -529,12 +529,12 @@ class OpenDbTest(testlib.AiolmdbTestCase):
     def test_readonly_env_sub(self):
         # https://github.com/dw/py-aiolmdb/issues/109
         path, env = self.create_env()
-        assert env.open_db(b'node_schedules') is not None
+        self.assertIsNotNone(env.open_db(b'node_schedules'))
         env.close()
 
         env = aiolmdb.open(path, max_dbs=10, readonly=True)
         db = env.open_db(b'node_schedules', create=False)
-        assert db is not None
+        self.assertIsNotNone(db)
 
 
 def reader_count(env): return env.readers().count('\n') - 1
@@ -548,7 +548,7 @@ class LeakTest(testlib.AiolmdbTestCase):
         ref = weakref.ref(env)
         env = None
         testlib.debug_collect()
-        assert ref() is None
+        self.assertIsNone(ref())
 
     def test_open_close_does_not_leak(self):
         temp_dir = self.create_dir()
@@ -557,7 +557,7 @@ class LeakTest(testlib.AiolmdbTestCase):
         ref = weakref.ref(env)
         env = None
         testlib.debug_collect()
-        assert ref() is None
+        self.assertIsNone(ref())
 
     def test_weakref_callback_invoked_once(self):
         temp_dir = self.create_dir()
@@ -570,8 +570,8 @@ class LeakTest(testlib.AiolmdbTestCase):
         ref = weakref.ref(env, callback)
         env = None
         testlib.debug_collect()
-        assert ref() is None
-        assert count[0] == 1
+        self.assertIsNone(ref())
+        self.assertEqual(count[0], 1)
 
 
 if __name__ == '__main__':
