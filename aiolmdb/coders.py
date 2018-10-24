@@ -12,7 +12,7 @@ class Coder():
     pass
 
   @abstractmethod
-  def deserialize(self, buffer):
+  def deserialize(self, buf):
     pass
 
   def compressed(self, level=1):
@@ -24,10 +24,8 @@ class IdentityCoder(Coder):
   def serialize(self, obj):
     return bytes(obj)
 
-  def deserialize(self, buffer):
-    if buffer is None:
-      return None
-    return bytes(buffer)
+  def deserialize(self, buf):
+    return None if buf is None else bytes(buf)
 
 
 class StringCoder(Coder):
@@ -38,10 +36,8 @@ class StringCoder(Coder):
   def serialize(self, obj):
     return obj.encode(self.encoding)
 
-  def deserialize(self, buffer):
-    if buffer is None:
-      return None
-    return buffer.decode(self.encoding)
+  def deserialize(self, buf):
+    return None if buf is None else buf.decode(self.encoding)
 
 
 def __create_int_coder(name, fmt):
@@ -51,10 +47,8 @@ def __create_int_coder(name, fmt):
     def serialize(self, obj):
       return struct.pack(fmt, obj)
 
-    def deserialize(self, buffer):
-      if buffer is None:
-        return None
-      return struct.unpack(fmt, buffer)[0]
+    def deserialize(self, buf):
+      return None if buf is None else struct.unpack(fmt, buf)[0]
 
   IntCoder.__name__ = name
   return IntCoder
@@ -70,22 +64,20 @@ class PickleCoder(Coder):
   def serialize(self, obj):
     return pickle.dumps(obj)
 
-  def deserialize(self, buffer):
-    if buffer is None:
-      return None
-    return pickle.loads(buffer)
+  def deserialize(self, buf):
+    return None if buf is None else pickle.loads(buf)
 
 
 class JSONCoder(StringCoder):
 
   def serialize(self, obj):
     json_str = json.dumps(obj, ensure_ascii=False)
-    return super(StringCoder, self).serialize(json_str)
+    return super(JSONCoder, self).serialize(json_str)
 
-  def deserialize(self, buffer):
-    if buffer is None:
+  def deserialize(self, buf):
+    if buf is None:
       return None
-    return json.loads(super(StringCoder, self).deserialize(buffer))
+    return json.loads(super(JSONCoder, self).deserialize(buf))
 
 
 class ZlibCoder(Coder):
@@ -98,8 +90,8 @@ class ZlibCoder(Coder):
     buf = self.subcoder.serialize(obj)
     return zlib.compress(buf, self.level)
 
-  def deserialize(self, buffer):
-    if buffer is None:
+  def deserialize(self, buf):
+    if buf is None:
       return None
-    decomp_buffer = zlib.decompress(buffer)
-    return self.subcoder.deserialize(decomp_buffer)
+    decomp_buf = zlib.decompress(buf)
+    return self.subcoder.deserialize(decomp_buf)
