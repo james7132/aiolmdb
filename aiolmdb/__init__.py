@@ -27,7 +27,7 @@ def open(*args, **kwargs):
 
 
 def version():
-      return lmdb.version()
+    return lmdb.version()
 
 
 def __action(async_db, action, write):
@@ -42,7 +42,8 @@ class AsyncEnviroment():
         worker_count = multiprocessing.cpu_count()
 
         self.env = env
-        self.executor = executor or ThreadPoolExecutor(max_workers=worker_count)
+        self.executor = executor or ThreadPoolExecutor(
+            max_workers=worker_count)
         self._default_db = AsyncDatabase(self.env, None)
 
         for attr in __WRAPPED_ATTRS__:
@@ -87,7 +88,7 @@ class AsyncEnviroment():
         <http://symas.com/mdb/doc/group__mdb.html#ga5d51d6130325f7353db0955dbedbc378>`_
         """
         def __copy_action():
-          return self.env.copy(path, compact=compact)
+            return self.env.copy(path, compact=compact)
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, __copy_action)
 
@@ -105,7 +106,7 @@ class AsyncEnviroment():
         <http://symas.com/mdb/doc/group__mdb.html#ga5d51d6130325f7353db0955dbedbc378>`_
         """
         def __copyfd_action():
-          return self.env.copyfd(fd, compact=compact)
+            return self.env.copyfd(fd, compact=compact)
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, __copyfd_action)
 
@@ -127,7 +128,7 @@ class AsyncEnviroment():
             omitted, and with `map_async=True` they will be asynchronous.
         """
         def __sync_action():
-          return self.env.sync(force=force)
+            return self.env.sync(force=force)
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self.executor, __sync_action)
 

@@ -1,16 +1,17 @@
 from aiolmdb.coders import *
 import unittest
 
+
 class CoderTests(unittest.TestCase):
 
     def test_identity_serialize(self):
-        test_cases = [ b'0000', b'0003', b'0020', b'0wdl', b'oqda', b'fdqz', ]
+        test_cases = [b'0000', b'0003', b'0020', b'0wdl', b'oqda', b'fdqz', ]
         for case in test_cases:
             with self.subTest(input=case):
                 self.assertEqual(case, IdentityCoder().serialize(case))
 
     def test_identity_deserialize(self):
-        test_cases = [ b'0000', b'0003', b'0020', b'0wdl', b'oqda', b'fdqz', ]
+        test_cases = [b'0000', b'0003', b'0020', b'0wdl', b'oqda', b'fdqz', ]
         for case in test_cases:
             with self.subTest(input=case):
                 self.assertEqual(case, IdentityCoder().deserialize(case))
@@ -111,7 +112,7 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'{}'),
             ([], b'[]'),
-            ({"key":"value"}, b'{"key": "value"}')
+            ({"key": "value"}, b'{"key": "value"}')
         ]
         for val, enc in test_cases:
             with self.subTest(val=val, enc=enc):
@@ -121,7 +122,7 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'{}'),
             ([], b'[]'),
-            ({"key":"value"}, b'{"key": "value"}')
+            ({"key": "value"}, b'{"key": "value"}')
         ]
         for val, enc in test_cases:
             with self.subTest(val=val, enc=enc):
@@ -131,7 +132,7 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
             ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
-            ({"key":"value"},
+            ({"key": "value"},
                 b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
         ]
         coder = JSONCoder().compressed(9)
@@ -143,7 +144,7 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
             ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
-            ({"key":"value"},
+            ({"key": "value"},
                 b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
         ]
         coder = JSONCoder().compressed(9)
@@ -155,7 +156,7 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'\x80\x03}q\x00.'),
             ([], b'\x80\x03]q\x00.'),
-            ({"key":"value"},
+            ({"key": "value"},
                 b'\x80\x03}q\x00X\x03\x00\x00\x00keyq\x01X\x05\x00\x00\x00valueq\x02s.')
         ]
         for val, enc in test_cases:
@@ -166,12 +167,13 @@ class CoderTests(unittest.TestCase):
         test_cases = [
             ({}, b'\x80\x03}q\x00.'),
             ([], b'\x80\x03]q\x00.'),
-            ({"key":"value"},
+            ({"key": "value"},
                 b'\x80\x03}q\x00X\x03\x00\x00\x00keyq\x01X\x05\x00\x00\x00valueq\x02s.')
         ]
         for val, enc in test_cases:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, PickleCoder().deserialize(enc))
+
 
 if __name__ == '__main__':
     unittest.main()
