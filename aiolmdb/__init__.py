@@ -10,8 +10,9 @@ __WRAPPED_ATTRS__ = [
     'stat',
     'max_key_size',
     'max_readers',
+    'readers',
     'path',
-    'reader_check'
+    'reader_check',
     'set_mapsize',
 ]
 
@@ -29,7 +30,7 @@ def version():
     return lmdb.version()
 
 
-def __action(env, async_db, action, write):
+def _action(env, async_db, action, write):
     with env.begin(write=write, db=async_db.db_handle, buffers=True) as txn:
         async_txn = AsyncTransaction(async_db, txn)
         return action(async_txn)
@@ -40,7 +41,7 @@ class AsyncTransaction():
     def __init__(self, async_db, txn):
         self.key_coder = async_db.key_coder
         self.value_coder = async_db.value_coder
-        self.db_handle = async_db.async_handle
+        self.db_handle = async_db.db_handle
         self.txn = txn
 
     def get(self, key, default=None):
@@ -140,15 +141,22 @@ class AsyncEnviroment():
         self.env = env
         self.executor = executor or ThreadPoolExecutor(
             max_workers=worker_count)
-        self._default_db = AsyncDatabase(self.env, None)
+        self._default_db = AsyncDatabase(self, None)
 
         for attr in __WRAPPED_ATTRS__:
             setattr(self, attr, getattr(self.env, attr))
 
     async def _run_action(self, async_db, action, write=False):
-        args = (self.env, async_db, action,  write)
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(self.executor, __action, args)
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self.executor, _action,
+                                          self.env, async_db, action, write)
+
+    def __enter__(self):
+        self.env.__enter__()
+        return self
+
+    def __exit__(self, *args):
+        self.env.__exit__(*args)
 
     def close(self):
         """
@@ -165,12 +173,14 @@ class AsyncEnviroment():
         """
         return self._default_db
 
-    def open_db(self, name, *args, **kwargs):
+    def open_db(self, name, *args, key_coder=None, value_coder=None, **kwargs):
         """
         Opens a child database with the provided name. args and kwargs are
         passed into the `AsyncDatabase` constructor.
         """
-        return AsyncDatabase(self, self.env.open_db(name), *args, **kwargs)
+        return AsyncDatabase(self, self.env.open_db(name, *args, **kwargs),
+                             key_coder=key_coder,
+                             value_coder=value_coder)
 
     async def copy(self, path, compact=False):
         """|coro|
@@ -188,7 +198,7 @@ class AsyncEnviroment():
         """
         def __copy_action():
             return self.env.copy(path, compact=compact)
-        loop = asyncio.get_running_loop()
+        loop = asyncio.get_event_loop()
         return await loop.run_in_executor(self.executor, __copy_action)
 
     async def copyfd(self, fd, compact=False):
@@ -206,7 +216,7 @@ class AsyncEnviroment():
         """
         def __copyfd_action():
             return self.env.copyfd(fd, compact=compact)
-        loop = asyncio.get_running_loop()
+        loop = asyncio.get_event_loop()
         return await loop.run_in_executor(self.executor, __copyfd_action)
 
     async def sync(self, force=False):
@@ -227,8 +237,8 @@ class AsyncEnviroment():
             omitted, and with `map_async=True` they will be asynchronous.
         """
         def __sync_action():
-            return self.env.sync(force=force)
-        loop = asyncio.get_running_loop()
+            return self.env.sync(force)
+        loop = asyncio.get_event_loop()
         return await loop.run_in_executor(self.executor, __sync_action)
 
 
@@ -237,8 +247,8 @@ class AsyncDatabase():
     def __init__(self, async_env, db_handle, key_coder=None, value_coder=None):
         self.async_env = async_env
         self.db_handle = db_handle
-        self.key_coder = key_coder or IdentityCoder
-        self.value_coder = value_coder or IdentityCoder
+        self.key_coder = key_coder or IdentityCoder()
+        self.value_coder = value_coder or IdentityCoder()
 
     async def run(self, action, write=False):
         """
