@@ -146,10 +146,11 @@ class AsyncEnviroment():
         for attr in __WRAPPED_ATTRS__:
             setattr(self, attr, getattr(self.env, attr))
 
-    async def _run_action(self, async_db, action, write=False):
+    @asyncio.coroutine
+    def _run_action(self, async_db, action, write=False):
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self.executor, _action,
-                                          self.env, async_db, action, write)
+        return (yield from loop.run_in_executor(self.executor, _action,
+                                          self.env, async_db, action, write))
 
     def __enter__(self):
         self.env.__enter__()
@@ -182,7 +183,8 @@ class AsyncEnviroment():
                              key_coder=key_coder,
                              value_coder=value_coder)
 
-    async def copy(self, path, compact=False):
+    @asyncio.coroutine
+    def copy(self, path, compact=False):
         """|coro|
         Make a consistent copy of the environment in the given destination
         directory.
@@ -199,9 +201,10 @@ class AsyncEnviroment():
         def __copy_action():
             return self.env.copy(path, compact=compact)
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self.executor, __copy_action)
+        return (yield from loop.run_in_executor(self.executor, __copy_action))
 
-    async def copyfd(self, fd, compact=False):
+    @asyncio.coroutine
+    def copyfd(self, fd, compact=False):
         """|coro|
         Copy a consistent version of the environment to file descriptor `fd`.
 
@@ -217,9 +220,10 @@ class AsyncEnviroment():
         def __copyfd_action():
             return self.env.copyfd(fd, compact=compact)
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self.executor, __copyfd_action)
+        return (yield from loop.run_in_executor(self.executor, __copyfd_action))
 
-    async def sync(self, force=False):
+    @asyncio.coroutine
+    def sync(self, force=False):
         """|coro|
         Flush the data buffers to disk.
 
@@ -239,7 +243,7 @@ class AsyncEnviroment():
         def __sync_action():
             return self.env.sync(force)
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self.executor, __sync_action)
+        return (yield from loop.run_in_executor(self.executor, __sync_action))
 
 
 class AsyncDatabase():
@@ -250,7 +254,8 @@ class AsyncDatabase():
         self.key_coder = key_coder or IdentityCoder()
         self.value_coder = value_coder or IdentityCoder()
 
-    async def run(self, action, write=False):
+    @asyncio.coroutine
+    def run(self, action, write=False):
         """
         Runs an asynchronous operation with the database.
 
@@ -266,16 +271,18 @@ class AsyncDatabase():
             read-only transaction. Write transactions will block the thread
             they are executing if there are contending write transactions.
         """
-        return await self.async_env._run_action(self, action, write=write)
+        return (yield from self.async_env._run_action(self, action, write=write))
 
-    async def stat(self):
+    @asyncio.coroutine
+    def stat(self):
         """|coro|
         Return statistics like :py:meth:`Environment.stat`, except for a single
         DBI. `db` must be a database handle returned by :py:meth:`open_db`.
         """
-        return await self.run(lambda txn: txn.stat(self.db))
+        return (yield from self.run(lambda txn: txn.stat(self.db)))
 
-    async def get(self, key, default=None):
+    @asyncio.coroutine
+    def get(self, key, default=None):
         """|coro|
         Fetch the first value matching `key`, returning `default` if `key`
         does not exist. A cursor must be used to fetch all values for a key in
@@ -284,21 +291,24 @@ class AsyncDatabase():
         Equivalent to `mdb_get()
         <http://symas.com/mdb/doc/group__mdb.html#ga8bf10cd91d3f3a83a34d04ce6b07992d>`_
         """
-        return await self.run(lambda txn: txn.get(key, default))
+        return (yield from self.run(lambda txn: txn.get(key, default)))
 
-    async def pop(self, key):
+    @asyncio.coroutine
+    def pop(self, key):
         """|coro|
         Use a temporary cursor to invoke :py:meth:`Cursor.pop` on a key.
         """
-        return await self.run(lambda txn: txn.pop(key), write=True)
+        return (yield from self.run(lambda txn: txn.pop(key), write=True))
 
-    async def replace(self, key, value):
+    @asyncio.coroutine
+    def replace(self, key, value):
         """|coro|
         Use a temporary cursor to invoke :py:meth:`Cursor.replace`.
         """
-        return await self.run(lambda txn: txn.replace(key, value), write=True)
+        return (yield from self.run(lambda txn: txn.replace(key, value), write=True))
 
-    async def put(self, key, value, dupdata=True, overwrite=True):
+    @asyncio.coroutine
+    def put(self, key, value, dupdata=True, overwrite=True):
         """|coro|
         Store a record, returning ``True`` if it was written, or ``False``
         to indicate the key was already present and `overwrite=False`. On
@@ -323,12 +333,13 @@ class AsyncDatabase():
         `overwrite`:
             If ``False``, do not overwrite any existing matching key.
         """
-        return await self.run(
+        return (yield from self.run(
             lambda txn: txn.put(key, value, dupdata=dupdata,
                                 overwrite=overwrite),
-            write=True)
+            write=True))
 
-    async def delete(self, key, value=None):
+    @asyncio.coroutine
+    def delete(self, key, value=None):
         """|coro|
         Delete a key from the database.
 
@@ -344,18 +355,20 @@ class AsyncDatabase():
 
         Returns True if at least one key was deleted.
         """
-        return await self.run(lambda txn: txn.delete(key), write=True)
+        return (yield from self.run(lambda txn: txn.delete(key), write=True))
 
-    async def get_multi(self, keys):
+    @asyncio.coroutine
+    def get_multi(self, keys):
         """|coro|
         Gets multiple keys from the database. Returns a dict of {key, value}.
 
         `keys`:
         An iterable of keys to retrieve from the database.
         """
-        return await self.run(lambda txn: {key: txn.get(key) for key in keys})
+        return (yield from self.run(lambda txn: {key: txn.get(key) for key in keys}))
 
-    async def put_multi(self, items):
+    @asyncio.coroutine
+    def put_multi(self, items):
         """|coro|
         Sets multiple (key, value) tuples in the database.
 
@@ -368,9 +381,10 @@ class AsyncDatabase():
                               self.value_coder.serialize(value))
                              for key, value in items]
                 return csr.put_multi(items_enc)
-        return await self.run(__put_multi_action, write=True)
+        return (yield from self.run(__put_multi_action, write=True))
 
-    async def delete_multi(self, keys):
+    @asyncio.coroutine
+    def delete_multi(self, keys):
         """|coro|
         Deletes multiple keys from the database. Returns a dictionary of
         {key, bool} each stating which key was successfully deleted.
@@ -378,15 +392,16 @@ class AsyncDatabase():
         `items`:
             An iterable of keys to delete.
         """
-        return await self.run(
+        return (yield from self.run(
             lambda txn: {key: txn.delete(key) for key in keys},
-            write=True)
+            write=True))
 
-    async def drop(self, delete=True):
+    @asyncio.coroutine
+    def drop(self, delete=True):
         """|coro|
         Drops the database from the enviroment.
 
         `delete`:
         If ``True``, also deletes all values in the database.
         """
-        return await self.run(lambda txn: self.drop(delete=delete), write=True)
+        return (yield from self.run(lambda txn: self.drop(delete=delete), write=True))

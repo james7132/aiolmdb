@@ -2,6 +2,7 @@ import os
 import unittest
 
 import aiolmdb
+import asyncio
 import lmdb
 import sys
 from tests import testlib
@@ -47,8 +48,9 @@ class OpenTest(testlib.AiolmdbTestCase):
     def test_tiny_size(self):
         _, env = self.create_env(map_size=10)
 
-        async def txn():
-            await env.get_default_db().put(b'a', b'a')
+        @asyncio.coroutine
+        def txn():
+            yield from env.get_default_db().put(b'a', b'a')
         self.assertAsyncRaises(lmdb.MapFullError, txn)
 
     def test_subdir_false_junk(self):
@@ -88,11 +90,12 @@ class OpenTest(testlib.AiolmdbTestCase):
         path, env = self.create_env()
         assert aiolmdb.open(path, subdir=True, create=True).path() == path
 
-    async def test_readonly_false(self):
+    @asyncio.coroutine
+    def test_readonly_false(self):
         path, env = self.create_env(readonly=False)
         db = env.get_default_db()
-        await db.put(b'a', b'')
-        assert await db.get(b'a') == b''
+        yield from db.put(b'a', b'')
+        assert (yield from db.get(b'a')) == b''
         assert not env.flags()['readonly']
 
     def test_readonly_true_noexist(self):
@@ -110,8 +113,9 @@ class OpenTest(testlib.AiolmdbTestCase):
         assert env2.path() == path
         # Attempting a write txn should fail.
 
-        async def txn(txn):
-            await env2.get_default_db().put(b'a', b'a')
+        @asyncio.coroutine
+        def txn(txn):
+            yield from env2.get_default_db().put(b'a', b'a')
         self.assertAsyncRaises(lmdb.ReadonlyError, txn)
         # Flag should be set.
         assert env2.flags()['readonly']
@@ -226,10 +230,11 @@ class SetMapSizeTest(testlib.AiolmdbTestCase):
 
 class CloseTest(testlib.AiolmdbTestCase):
 
-    async def test_close(self):
+    @asyncio.coroutine
+    def test_close(self):
         _, env = self.create_env()
         # Attempting things should be ok.
-        await env.get_default_db().put(b'a', b'')
+        yield from env.get_default_db().put(b'a', b'')
         # txn.put(b'a', b'')
         # cursor = txn.cursor()
         # list(cursor)
@@ -248,34 +253,39 @@ class CloseTest(testlib.AiolmdbTestCase):
         # txn.abort()
         # Attempting to start new txn should crash.
 
-        async def txn():
-            await env.get_default_db().get(b'a')
+        @asyncio.coroutine
+        def txn():
+            yield from env.get_default_db().get(b'a')
         self.assertAsyncRaises(Exception, txn())
 
 
 class ContextManagerTest(testlib.AiolmdbTestCase):
 
-    async def test_ok(self):
+    @asyncio.coroutine
+    def test_ok(self):
         path, env = self.create_env()
         with env as env_:
             assert env_ is env
-            await env.get_default_db().get(b'foo')
+            yield from env.get_default_db().get(b'foo')
 
-        async def txn():
-            await env.get_default_db().get(b'foo')
+        @asyncio.coroutine
+        def txn():
+            yield from env.get_default_db().get(b'foo')
         self.assertAsyncRaises(Exception, txn())
 
-    async def test_crash(self):
+    @asyncio.coroutine
+    def test_crash(self):
         path, env = self.create_env()
         try:
             with env as env_:
                 assert env_ is env
-                await env.get_default_db().get(123)
+                yield from env.get_default_db().get(123)
         except:
             pass
 
-        async def txn():
-            await env.get_default_db().get(b'foo')
+        @asyncio.coroutine
+        def txn():
+            yield from env.get_default_db().get(b'foo')
         self.assertAsyncRaises(Exception, txn())
 
 
@@ -290,7 +300,8 @@ class InfoMethodsTest(testlib.AiolmdbTestCase):
         self.assertRaises(Exception,
                           lambda: env.path())
 
-    async def test_stat(self):
+    @asyncio.coroutine
+    def test_stat(self):
         _, env = self.create_env()
         stat = env.stat()
         for k in 'psize', 'depth', 'branch_pages', 'overflow_pages',\
@@ -300,7 +311,7 @@ class InfoMethodsTest(testlib.AiolmdbTestCase):
 
         assert stat['entries'] == 0
         db = env.get_default_db()
-        await db.put(b'a', b'b')
+        yield from db.put(b'a', b'b')
         stat = env.stat()
         assert stat['entries'] == 1
 
@@ -308,7 +319,8 @@ class InfoMethodsTest(testlib.AiolmdbTestCase):
         self.assertRaises(Exception,
                           lambda: env.stat())
 
-    async def test_info(self):
+    @asyncio.coroutine
+    def test_info(self):
         _, env = self.create_env()
         info = env.info()
         for k in 'map_addr', 'map_size', 'last_pgno', 'last_txnid', \
@@ -317,7 +329,7 @@ class InfoMethodsTest(testlib.AiolmdbTestCase):
             assert info[k] >= 0
         assert info['last_txnid'] == 0
         db = env.get_default_db()
-        await db.put(b'a', b'b')
+        yield from db.put(b'a', b'b')
         info = env.info()
         assert info['last_txnid'] == 1
 
@@ -359,80 +371,89 @@ class InfoMethodsTest(testlib.AiolmdbTestCase):
 
 class OtherMethodsTest(testlib.AiolmdbTestCase):
 
-    async def test_copy(self):
+    @asyncio.coroutine
+    def test_copy(self):
         _, env = self.create_env()
-        await env.get_default_db().put(b'a', b'b')
+        yield from env.get_default_db().put(b'a', b'b')
 
         dest_dir = self.create_dir()
-        await env.copy(dest_dir)
+        yield from env.copy(dest_dir)
         assert os.path.exists(dest_dir + '/data.mdb')
 
         cenv = aiolmdb.open(dest_dir)
-        self.assertEquals(await cenv.get_default_db().get(b'a'), b'b')
+        self.assertEquals((yield from cenv.get_default_db().get(b'a')), b'b')
 
         env.close()
 
-        async def txn():
-            await env.copy(self.create_dir())
+        @asyncio.coroutine
+        def txn():
+            yield from env.copy(self.create_dir())
         self.assertAsyncRaises(Exception, txn())
 
-    async def test_copy_compact(self):
+    @asyncio.coroutine
+    def test_copy_compact(self):
         _, env = self.create_env()
-        await env.get_default_db().put(b'a', b'b')
+        yield from env.get_default_db().put(b'a', b'b')
 
         dest_dir = self.create_dir()
-        await env.copy(dest_dir, compact=True)
+        yield from env.copy(dest_dir, compact=True)
         assert os.path.exists(dest_dir + '/data.mdb')
 
         cenv = aiolmdb.open(dest_dir)
-        assert await cenv.get_default_db().get(b'a') == b'b'
+        self.assertEquals((yield from cenv.get_default_db().get(b'a')), b'b')
 
         env.close()
 
-        async def txn():
-            await env.copy(self.create_dir())
+        @asyncio.coroutine
+        def txn():
+            yield from env.copy(self.create_dir())
         self.assertAsyncRaises(Exception, txn)
 
-    async def test_copyfd(self):
+    @asyncio.coroutine
+    def test_copyfd(self):
         path, env = self.create_env()
-        await env.get_default_db().put(b'a', b'b')
+        yield from env.get_default_db().put(b'a', b'b')
 
         dst_path = self.create_file(create=False)
         fp = open(dst_path, 'wb')
-        await env.copyfd(fp.fileno())
+        yield from env.copyfd(fp.fileno())
 
         dstenv = aiolmdb.open(dst_path, subdir=False)
-        assert await dstenv.get_default_db().get(b'a') == b'b'
+        assert (yield from dstenv.get_default_db().get(b'a')) == b'b'
 
         env.close()
 
-        async def txn():
-            await env.copyfd(fp.fileno())
+        @asyncio.coroutine
+        def txn():
+            yield from env.copyfd(fp.fileno())
         self.assertAsyncRaises(Exception, txn())
         fp.close()
 
-    async def test_copyfd_compact(self):
+    @asyncio.coroutine
+    def test_copyfd_compact(self):
         path, env = self.create_env()
-        await env.get_default_db().put(b'a', b'b')
+        yield from env.get_default_db().put(b'a', b'b')
 
         dst_path = self.create_file(create=False)
         fp = open(dst_path, 'wb')
-        await env.copyfd(fp.fileno(), compact=True)
+        yield from env.copyfd(fp.fileno(), compact=True)
 
         dstenv = aiolmdb.open(dst_path, subdir=False)
-        assert await dstenv.get_default_db().get(b'a') == b'b'
+        assert (yield from dstenv.get_default_db().get(b'a')) == b'b'
 
         env.close()
 
-        async def txn():
-            await env.copyfd(fp.fileno())
+        @asyncio.coroutine
+        def txn():
+            yield from env.copyfd(fp.fileno())
         self.assertAsyncRaises(Exception, txn())
         fp.close()
 
-    async def test_sync(self):
+    @asyncio.coroutine
+    def test_sync(self):
         _, env = self.create_env()
-        await env.sync(False)
-        await env.sync(True)
+        yield from env.sync(False)
+        yield from env.sync(True)
         env.close()
         self.assertAsyncRaises(Exception, env.sync(False))
 
