@@ -150,7 +150,8 @@ class AsyncEnviroment():
     def _run_action(self, async_db, action, write=False):
         loop = asyncio.get_event_loop()
         return (yield from loop.run_in_executor(self.executor, _action,
-                                          self.env, async_db, action, write))
+                                                self.env, async_db,
+                                                action, write))
 
     def __enter__(self):
         self.env.__enter__()
@@ -220,7 +221,8 @@ class AsyncEnviroment():
         def __copyfd_action():
             return self.env.copyfd(fd, compact=compact)
         loop = asyncio.get_event_loop()
-        return (yield from loop.run_in_executor(self.executor, __copyfd_action))
+        return (yield from loop.run_in_executor(self.executor,
+                                                __copyfd_action))
 
     @asyncio.coroutine
     def sync(self, force=False):
@@ -271,7 +273,8 @@ class AsyncDatabase():
             read-only transaction. Write transactions will block the thread
             they are executing if there are contending write transactions.
         """
-        return (yield from self.async_env._run_action(self, action, write=write))
+        return (yield from self.async_env._run_action(self, action,
+                                                      write=write))
 
     @asyncio.coroutine
     def stat(self):
@@ -305,7 +308,8 @@ class AsyncDatabase():
         """|coro|
         Use a temporary cursor to invoke :py:meth:`Cursor.replace`.
         """
-        return (yield from self.run(lambda txn: txn.replace(key, value), write=True))
+        return (yield from self.run(lambda txn: txn.replace(key, value),
+                                    write=True))
 
     @asyncio.coroutine
     def put(self, key, value, dupdata=True, overwrite=True):
@@ -365,7 +369,8 @@ class AsyncDatabase():
         `keys`:
         An iterable of keys to retrieve from the database.
         """
-        return (yield from self.run(lambda txn: {key: txn.get(key) for key in keys}))
+        return (yield from self.run(
+            lambda txn: {key: txn.get(key) for key in keys}))
 
     @asyncio.coroutine
     def put_multi(self, items):
@@ -404,4 +409,5 @@ class AsyncDatabase():
         `delete`:
         If ``True``, also deletes all values in the database.
         """
-        return (yield from self.run(lambda txn: self.drop(delete=delete), write=True))
+        return (yield from self.run(lambda txn: self.drop(delete=delete),
+                                    write=True))
