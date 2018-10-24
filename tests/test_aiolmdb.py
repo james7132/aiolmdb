@@ -280,7 +280,7 @@ class ContextManagerTest(testlib.AiolmdbTestCase):
             with env as env_:
                 assert env_ is env
                 yield from env.get_default_db().get(123)
-        except:
+        except Exception:
             pass
 
         @asyncio.coroutine
