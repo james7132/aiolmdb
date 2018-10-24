@@ -61,11 +61,14 @@ await db.run(transaction_action)
 
 **Using coders**
 
-To lessen the time spent in the main asyncio loop serializing/deserializing keys
-and values into meaningful forms, aiolmdb supports adding database level coders
-to run this serialization/deserialization logic in the executor instead of in
-the main loop. By default every aiolmdb database uses the `IdentityCoder` which
-accepts bytes like objects.
+Applications do not operate directly on bytearrays, and require converting
+runtime objects to and from serialized bytearrays. To avoid spending additional
+time on the main loop running this conversion code, aiolmdb supports adding 
+database level coders to run this serialization/deserialization logic in the 
+executor instead of in the main loop. By default, every aiolmdb database uses 
+the `IdentityCoder` which supports directly writing bytes like objects. Other
+coders can be used for both the key and value to change the types of objects
+accepted by the API.
 
 ```python
 # Opening a database with specific coders
