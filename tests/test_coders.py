@@ -1,5 +1,28 @@
-from aiolmdb.coders import *
+from aiolmdb.coders import IdentityCoder
+from aiolmdb.coders import StringCoder
+from aiolmdb.coders import UInt16Coder, UInt32Coder, UInt64Coder
+from aiolmdb.coders import JSONCoder, PickleCoder
 import unittest
+
+PICKLE_TEST_CASES = [
+    ({}, b'\x80\x03}q\x00.'),
+    ([], b'\x80\x03]q\x00.'),
+    ({"key": "value"},
+     b'\x80\x03}q\x00X\x03\x00\x00\x00keyq\x01X\x05\x00\x00\x00valueq\x02s.')
+]
+
+COMPRESSED_TEST_CASES = [
+    ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
+    ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
+    ({"key": "value"},
+        b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
+]
+
+JSON_TEST_CASES = [
+    ({}, b'{}'),
+    ([], b'[]'),
+    ({"key": "value"}, b'{"key": "value"}')
+]
 
 
 class CoderTests(unittest.TestCase):
@@ -109,68 +132,34 @@ class CoderTests(unittest.TestCase):
                 self.assertEqual(val, StringCoder().deserialize(enc))
 
     def test_json_serialize(self):
-        test_cases = [
-            ({}, b'{}'),
-            ([], b'[]'),
-            ({"key": "value"}, b'{"key": "value"}')
-        ]
-        for val, enc in test_cases:
+        for val, enc in JSON_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(enc, JSONCoder().serialize(val))
 
     def test_json_deserialize(self):
-        test_cases = [
-            ({}, b'{}'),
-            ([], b'[]'),
-            ({"key": "value"}, b'{"key": "value"}')
-        ]
-        for val, enc in test_cases:
+        for val, enc in JSON_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, JSONCoder().deserialize(enc))
 
     def test_compressed_deserialize(self):
-        test_cases = [
-            ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
-            ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
-            ({"key": "value"},
-                b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
-        ]
         coder = JSONCoder().compressed(9)
-        for val, enc in test_cases:
+        for val, enc in COMPRESSED_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, coder.deserialize(enc))
 
     def test_compressed_serialize(self):
-        test_cases = [
-            ({}, b'x\xda\xab\xae\x05\x00\x01u\x00\xf9'),
-            ([], b'x\xda\x8b\x8e\x05\x00\x01\x15\x00\xb9'),
-            ({"key": "value"},
-                b'x\xda\xabV\xcaN\xadT\xb2RP*K\xcc)MU\xaa\x05\x00+\xaf\x05A')
-        ]
         coder = JSONCoder().compressed(9)
-        for val, enc in test_cases:
+        for val, enc in COMPRESSED_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(enc, coder.serialize(val))
 
     def test_pickle_serialize(self):
-        test_cases = [
-            ({}, b'\x80\x03}q\x00.'),
-            ([], b'\x80\x03]q\x00.'),
-            ({"key": "value"},
-                b'\x80\x03}q\x00X\x03\x00\x00\x00keyq\x01X\x05\x00\x00\x00valueq\x02s.')
-        ]
-        for val, enc in test_cases:
+        for val, enc in PICKLE_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(enc, PickleCoder().serialize(val))
 
     def test_pickle_deserialize(self):
-        test_cases = [
-            ({}, b'\x80\x03}q\x00.'),
-            ([], b'\x80\x03]q\x00.'),
-            ({"key": "value"},
-                b'\x80\x03}q\x00X\x03\x00\x00\x00keyq\x01X\x05\x00\x00\x00valueq\x02s.')
-        ]
-        for val, enc in test_cases:
+        for val, enc in PICKLE_TEST_CASES:
             with self.subTest(val=val, enc=enc):
                 self.assertEqual(val, PickleCoder().deserialize(enc))
 
