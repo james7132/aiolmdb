@@ -8,6 +8,7 @@ python:
 install:
   - pip install -r requirements.txt
   - pip install flake8
+  - pip install asynctest
   - python setup.py develop
 script:
   - flake8 --show-source aiolmdb test
