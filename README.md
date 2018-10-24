@@ -130,3 +130,7 @@ class CustomCoder(Coder):
    write transactions are strongly discouraged.
  * Due to design limitations, atomic transactions across multiple databases is
    currently not easy to do, nor is the code very pythonic.
+
+## TODOs
+
+ * Support cursors and range queries
