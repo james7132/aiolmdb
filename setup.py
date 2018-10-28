@@ -5,13 +5,13 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name="aiolmdb",
-    version="0.1.0",
+    version="0.1.1",
     author="James Liu",
     author_email="contact@jamessliu.com",
     description="An asyncio wrapper around Lighting Memory Mapped Database (LMDB)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/james7132/aiolmdb",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
