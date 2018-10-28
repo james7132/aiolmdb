@@ -1,26 +1,31 @@
 language: python
+cache: pip
 python:
 - 3.4
 - 3.5
 - 3.6
 - 3.7-dev
 - pypy3.5
-cache: pip
+script:
+- flake8 --show-source aiolmdb test
+- python -m unittest discover
+- python setup.py
 install:
 - pip install -r requirements.txt
 - pip install flake8
 - pip install asynctest
 - python setup.py develop
-script:
-- flake8 --show-source aiolmdb test
-- python -m unittest discover
 notifications:
   email: false
-deploy:
-  provider: pypi
-  user: james7132
-  password:
-    secure: jLpMVOppwrZ07Jsh+S465VC1LCFyV456jWJlL9yyj4f8zdAzPqrYe2bMqmsketWAjtjF73t4Fb37yHcEzoDoihPLZU7j4E1EtHPIQRlKhwpIIIqDSRsu1Lp558MfvA9PODYK6Xs6nL2dzttXUbjgAs7R9uzgM0vj3/90uVDBmgW760ORa0NIimRJYK3M8rPJM6nX9czR5SLxJHvCm1PBvudowC3aDtfxBVydKl1YImQek4fNHdZqpQZS11c/E/J0BThbQ7GOaAEnTofuhFSVCXZCCn7FucabVPVe/U1KkK5BrRn8ZtG7umpaNDfBQ8wZlcu0g05aLZhpTpKdLe+gPnwJCVsvcJbaYcgHqBxT0WsZHngksdpYYlBxhYBnBkgjW9GH/ilp6wLDv1vR3sWU3tXCNZ0VRfEgxRjGvrmhfwaFBhcCPhfZtsBWYFQKIoNmcLDqt7wF3ZHybxmgC6KoEebo/YTW62l8jNs1gebNX3A80f13eqOUc6onXKB8nv03UFKPpuOooyFTySaryjXg38H/WmVZV5OnUmPTCM2mWK4gbG4sUIfKVSKC0/DseeCGgKVQXVMjEp2eaPtnu+i8CF7TnVnzAScRlwjoeMVCzhJTE+BAETOJr+D0HX9UaKLZGO+oeVv5ZkZiU004sOpON4oRQtiZPwCPLFOo2rqyxzg=
-  on:
-    tags: true
-  skip_cleanup: true
+jobs:
+  include:
+  - stage: deploy
+    python: 3.7-dev
+    if: tag IS present
+    script: python setup.py sdist bdist_wheel
+    deploy:
+      provider: pypi
+      user: james7132
+      password:
+        secure: jLpMVOppwrZ07Jsh+S465VC1LCFyV456jWJlL9yyj4f8zdAzPqrYe2bMqmsketWAjtjF73t4Fb37yHcEzoDoihPLZU7j4E1EtHPIQRlKhwpIIIqDSRsu1Lp558MfvA9PODYK6Xs6nL2dzttXUbjgAs7R9uzgM0vj3/90uVDBmgW760ORa0NIimRJYK3M8rPJM6nX9czR5SLxJHvCm1PBvudowC3aDtfxBVydKl1YImQek4fNHdZqpQZS11c/E/J0BThbQ7GOaAEnTofuhFSVCXZCCn7FucabVPVe/U1KkK5BrRn8ZtG7umpaNDfBQ8wZlcu0g05aLZhpTpKdLe+gPnwJCVsvcJbaYcgHqBxT0WsZHngksdpYYlBxhYBnBkgjW9GH/ilp6wLDv1vR3sWU3tXCNZ0VRfEgxRjGvrmhfwaFBhcCPhfZtsBWYFQKIoNmcLDqt7wF3ZHybxmgC6KoEebo/YTW62l8jNs1gebNX3A80f13eqOUc6onXKB8nv03UFKPpuOooyFTySaryjXg38H/WmVZV5OnUmPTCM2mWK4gbG4sUIfKVSKC0/DseeCGgKVQXVMjEp2eaPtnu+i8CF7TnVnzAScRlwjoeMVCzhJTE+BAETOJr+D0HX9UaKLZGO+oeVv5ZkZiU004sOpON4oRQtiZPwCPLFOo2rqyxzg=
+      skip_cleanup: true
