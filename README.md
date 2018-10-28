@@ -1,4 +1,4 @@
-# aiolmdb [![Travis](https://travis-ci.org/james7132/aiolmdb.svg?branch=master)](https://travis-ci.org/james7132/aiolmdb)
+# aiolmdb [![Travis](https://travis-ci.org/james7132/aiolmdb.svg?branch=master)](https://travis-ci.org/james7132/aiolmdb) [![PyPI](https://img.shields.io/pypi/v/aiolmdb.svg)](https://pypi.org/project/aiolmdb/)
 
 An asyncio wrapper around LMDB.
 
@@ -63,9 +63,9 @@ await db.run(transaction_action)
 
 Applications do not operate directly on bytearrays, and require converting
 runtime objects to and from serialized bytearrays. To avoid spending additional
-time on the main loop running this conversion code, aiolmdb supports adding 
-database level coders to run this serialization/deserialization logic in the 
-executor instead of in the main loop. By default, every aiolmdb database uses 
+time on the main loop running this conversion code, aiolmdb supports adding
+database level coders to run this serialization/deserialization logic in the
+executor instead of in the main loop. By default, every aiolmdb database uses
 the `IdentityCoder` which supports directly writing bytes like objects. Other
 coders can be used for both the key and value to change the types of objects
 accepted by the API.
@@ -88,7 +88,7 @@ UInt16Coder()     # 16-bit unsigned integer coder
 UInt32Coder()     # 32-bit unsigned integer coder
 UInt64Coder()     # 64-bit unsigned integer coder
 JSONCoder()       # JSON coder, works with any JSON serializable object
-PicleCoder()      # Pickle coder, works with any picklable object compression 
+PicleCoder()      # Pickle coder, works with any picklable object compression
 
 # Create a new JSONCoder, gzipped with compression level 9
 # Runs the encoded JSON through zlib before writing to database, and
